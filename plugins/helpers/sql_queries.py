@@ -1,3 +1,9 @@
+"""RedShift SQL quries
+
+Queries to create tables, insert data into fact and dimention tables, and tests.
+"""
+
+
 class SqlQueries:
     songplay_table_insert = """
         SELECT
@@ -162,11 +168,11 @@ class SqlQueries:
 
     test_count_rows = """
     SELECT COUNT(*)
-    FROM {table}
+    FROM {}
     """
 
     test_for_nulls = """
     SELECT COUNT(*) 
-    FROM {table}
-    WHERE {column} is NULL
+    FROM {}
+    WHERE {} is NULL
     """

@@ -1,16 +1,18 @@
+"""
+Sparkify Airflow DAG
+
+1. Load data from S3 into Redshift
+2. Create and load fact table.
+3. Create and load dimention tables.
+4. Run data quality checks.
+"""
+
 from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators import StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator
 from plugins.helpers import SqlQueries
-
-
-# AWS_KEY = os.environ.get('AWS_KEY')
-# AWS_SECRET = os.environ.get('AWS_SECRET')
-
-# Log data: s3://udacity-dend/log_data
-# Song data: s3://udacity-dend/song_data
 
 default_args = {
     "owner": "udacity",
@@ -41,8 +43,8 @@ stage_events_to_redshift = StageToRedshiftOperator(
     redshift_conn_id="redshift",
     aws_credentials_id="aws_credentials",
     s3_bucket="udacity-dend",
-    s3_key="log-data/{execution_date.year}/{execution_date.month:02d}",
-    format="JSON 's3://udacity-dend/log_json_path.json'",
+    s3_key="log-data",
+    file_format="JSON 's3://udacity-dend/log_json_path.json'",
     create_table_sql=SqlQueries.create_table_staging_events,
 )
 
@@ -53,8 +55,8 @@ stage_songs_to_redshift = StageToRedshiftOperator(
     redshift_conn_id="redshift",
     aws_credentials_id="aws_credentials",
     s3_bucket="udacity-dend",
-    s3_key="song_data/A/A",
-    format="JSON 'auto'",
+    s3_key="song_data",
+    file_format="JSON 'auto'",
     create_table_sql=SqlQueries.create_table_staging_songs,
 )
 
@@ -109,6 +111,7 @@ end_operator = DummyOperator(
     dag=dag,
 )
 
+# Create task run order
 start_operator >> stage_events_to_redshift
 start_operator >> stage_songs_to_redshift
 

@@ -31,7 +31,10 @@ class DataQualityOperator(BaseOperator):
 
         # Test for rows > 0
         for table in self.tables_and_columns:
+            self.log.debug(SqlQueries.test_count_rows.format(table))
             rows = redshift.get_records(SqlQueries.test_count_rows.format(table))
+            self.log.debug(f"{rows=}, {len(rows)=}, {len(rows[0])=}")
+
             if len(rows) > 1 or len(rows[0]) > 1:
                 self.log.info(f"Test passed. '{table}' has {rows[0][0]}.")
             else:
