@@ -2,6 +2,7 @@ from airflow.hooks.postgres_hook import PostgresHook
 from airflow.contrib.hooks.aws_hook import AwsHook
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
+from helpers import SqlQueries
 
 
 class StageToRedshiftOperator(BaseOperator):
@@ -45,7 +46,7 @@ class StageToRedshiftOperator(BaseOperator):
         self.log.info(f"Creating table '{self.table}'")
         redshift.run(self.create_table_sql)
 
-        self.log.info("Copying data from S3 to Redshift")
+        self.log.info(f"Copying data from S3 to Redshift")
         s3_path = f"s3://{self.s3_bucket}/{self.s3_key}"
         formatted_sql = StageToRedshiftOperator.copy_sql.format(
             self.table,
@@ -55,5 +56,13 @@ class StageToRedshiftOperator(BaseOperator):
             self.file_format,
         )
         redshift.run(formatted_sql)
+
+        # Test that data was loaded successfully
+        rows = redshift.get_first(SqlQueries.test_count_rows.format(self.table))
+
+        if rows[0] > 1:
+            self.log.info(f"Test passed. '{self.table}' has {rows[0]}.")
+        else:
+            raise ValueError(f"Test failed. '{self.table}' has 0 rows.")
 
         self.log.info("StageToRedshift completed")

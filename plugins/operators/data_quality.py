@@ -12,9 +12,9 @@ class DataQualityOperator(BaseOperator):
         self,
         redshift_conn_id="",
         tables_and_columns={
-            "songplays": ["playid", "artistid"],
+            "songplays": ["playid"],
             "users": ["userid"],
-            "songs": ["songid", "artistid"],
+            "songs": ["songid"],
             "artists": ["artistid"],
             "time": ["start_time"],
         },
@@ -31,22 +31,19 @@ class DataQualityOperator(BaseOperator):
 
         # Test for rows > 0
         for table in self.tables_and_columns:
-            self.log.debug(SqlQueries.test_count_rows.format(table))
-            rows = redshift.get_records(SqlQueries.test_count_rows.format(table))
-            self.log.debug(f"{rows=}, {len(rows)=}, {len(rows[0])=}")
-
-            if len(rows) > 1 or len(rows[0]) > 1:
-                self.log.info(f"Test passed. '{table}' has {rows[0][0]}.")
+            rows = redshift.get_first(SqlQueries.test_count_rows.format(table))
+            if rows[0] > 1:
+                self.log.info(f"Test passed. '{table}' has {rows[0]}.")
             else:
                 raise ValueError(f"Test failed. '{table}' has 0 rows.")
 
         # Test for nulls
         for table, columns in self.tables_and_columns.items():
             for column in columns:
-                rows = redshift.get_records(SqlQueries.test_for_nulls.format(table, column))
-                if len(rows) > 1 or len(rows[0]) > 1:
-                    raise ValueError(f"Test failed. '{table}' on column '{column}' has {rows[0][0]} NULL rows.")
+                rows = redshift.get_first(SqlQueries.test_for_nulls.format(table, column))
+                if rows[0] > 1:
+                    raise ValueError(f"Test failed. '{table}' on column '{column}' has {rows[0]} NULL rows.")
                 else:
                     self.log.info(f"Test passed. '{table}' on column '{column}' has no NULLs.")
 
-        self.log.info("DataQaulity check completed")
+        self.log.info("DataQuality check completed")

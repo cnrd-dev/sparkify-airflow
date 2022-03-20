@@ -48,9 +48,7 @@ class SqlQueries:
     """
 
     create_table_artists = """
-    DROP TABLE IF EXISTS public.artists;
-
-    CREATE TABLE public.artists
+    CREATE TABLE IF NOT EXISTS public.artists
     (
         artistid varchar(256) NOT NULL,
         name varchar(256),
@@ -61,8 +59,6 @@ class SqlQueries:
     """
 
     create_table_songplays = """
-    DROP TABLE IF EXISTS public.songplays;
-
     CREATE TABLE IF NOT EXISTS public.songplays
     (
         playid varchar(32) NOT NULL,
@@ -79,9 +75,7 @@ class SqlQueries:
     """
 
     create_table_songs = """
-    DROP TABLE IF EXISTS public.songs;
-
-    CREATE TABLE public.songs
+    CREATE TABLE IF NOT EXISTS public.songs
     (
         songid varchar(256) NOT NULL,
         title varchar(256),
@@ -93,9 +87,7 @@ class SqlQueries:
     """
 
     create_table_staging_events = """
-    DROP TABLE IF EXISTS public.staging_events;
-
-    CREATE TABLE public.staging_events
+    CREATE TABLE IF NOT EXISTS public.staging_events
     (
         artist varchar(256),
         auth varchar(256),
@@ -119,9 +111,7 @@ class SqlQueries:
     """
 
     create_table_staging_songs = """
-    DROP TABLE IF EXISTS public.staging_songs;
-
-    CREATE TABLE public.staging_songs
+    CREATE TABLE IF NOT EXISTS public.staging_songs
     (
         num_songs int4,
         artist_id varchar(256),
@@ -137,9 +127,7 @@ class SqlQueries:
     """
 
     create_table_time = """
-    DROP TABLE IF EXISTS public."time";
-
-    CREATE TABLE public."time"
+    CREATE TABLE IF NOT EXISTS public."time"
     (
         start_time timestamp NOT NULL,
         "hour" int4,
@@ -153,9 +141,7 @@ class SqlQueries:
     """
 
     create_table_users = """
-    DROP TABLE IF EXISTS public.users;
-
-    CREATE TABLE public.users
+    CREATE TABLE IF NOT EXISTS public.users
     (
         userid int4 NOT NULL,
         first_name varchar(256),

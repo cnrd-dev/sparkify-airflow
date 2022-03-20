@@ -5,6 +5,9 @@ from airflow.utils.decorators import apply_defaults
 
 class LoadDimensionOperator(BaseOperator):
     ui_color = "#80BD9E"
+    insert_sql = """
+        INSERT INTO {} ({})
+    """
 
     @apply_defaults
     def __init__(
@@ -29,7 +32,11 @@ class LoadDimensionOperator(BaseOperator):
         self.log.info(f"Creating table '{self.table}'")
         redshift.run(self.create_table_sql)
 
-        self.log.info("Inserting data into table '{self.table}'")
-        redshift.run(self.insert_data_into_table)
+        self.log.info(f"Inserting data into table '{self.table}'")
+        formatted_sql = LoadDimensionOperator.insert_sql.format(
+            self.table,
+            self.insert_data_into_table,
+        )
+        redshift.run(formatted_sql)
 
         self.log.info("LoadDim completed")
