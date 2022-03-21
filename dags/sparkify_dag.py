@@ -12,7 +12,7 @@ import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators import StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator
-from plugins.helpers import SqlQueries
+from helpers import SqlQueries
 
 default_args = {
     "owner": "udacity",
@@ -45,7 +45,6 @@ stage_events_to_redshift = StageToRedshiftOperator(
     s3_bucket="udacity-dend",
     s3_key="log-data",
     file_format="JSON 's3://udacity-dend/log_json_path.json'",
-    create_table_sql=SqlQueries.create_table_staging_events,
 )
 
 stage_songs_to_redshift = StageToRedshiftOperator(
@@ -57,7 +56,6 @@ stage_songs_to_redshift = StageToRedshiftOperator(
     s3_bucket="udacity-dend",
     s3_key="song_data",
     file_format="JSON 'auto'",
-    create_table_sql=SqlQueries.create_table_staging_songs,
 )
 
 load_songplays_table = LoadFactOperator(
@@ -65,7 +63,6 @@ load_songplays_table = LoadFactOperator(
     dag=dag,
     table="songplays",
     redshift_conn_id="redshift",
-    create_table_sql=SqlQueries.create_table_songplays,
     insert_data_into_table=SqlQueries.songplay_table_insert,
 )
 
@@ -74,8 +71,8 @@ load_user_dimension_table = LoadDimensionOperator(
     dag=dag,
     table="users",
     redshift_conn_id="redshift",
-    create_table_sql=SqlQueries.create_table_users,
     insert_data_into_table=SqlQueries.user_table_insert,
+    append_data=True,
 )
 
 load_song_dimension_table = LoadDimensionOperator(
@@ -83,8 +80,8 @@ load_song_dimension_table = LoadDimensionOperator(
     dag=dag,
     table="songs",
     redshift_conn_id="redshift",
-    create_table_sql=SqlQueries.create_table_songs,
     insert_data_into_table=SqlQueries.song_table_insert,
+    append_data=True,
 )
 
 load_artist_dimension_table = LoadDimensionOperator(
@@ -92,8 +89,8 @@ load_artist_dimension_table = LoadDimensionOperator(
     dag=dag,
     table="artists",
     redshift_conn_id="redshift",
-    create_table_sql=SqlQueries.create_table_artists,
     insert_data_into_table=SqlQueries.artist_table_insert,
+    append_data=True,
 )
 
 load_time_dimension_table = LoadDimensionOperator(
@@ -101,14 +98,26 @@ load_time_dimension_table = LoadDimensionOperator(
     dag=dag,
     table="time",
     redshift_conn_id="redshift",
-    create_table_sql=SqlQueries.create_table_time,
     insert_data_into_table=SqlQueries.time_table_insert,
+    append_data=True,
 )
 
 run_quality_checks = DataQualityOperator(
     task_id="Run_data_quality_checks",
     dag=dag,
     redshift_conn_id="redshift",
+    dq_checks=[
+        {"check_sql": "SELECT COUNT(*) FROM songplays", "expected_result": 0, "type": "greater"},
+        {"check_sql": "SELECT COUNT(*) FROM users", "expected_result": 0, "type": "greater"},
+        {"check_sql": "SELECT COUNT(*) FROM songs", "expected_result": 0, "type": "greater"},
+        {"check_sql": "SELECT COUNT(*) FROM artists", "expected_result": 0, "type": "greater"},
+        {"check_sql": "SELECT COUNT(*) FROM time", "expected_result": 0, "type": "greater"},
+        {"check_sql": "SELECT COUNT(*) FROM songplays WHERE playid is null", "expected_result": 0, "type": "equal"},
+        {"check_sql": "SELECT COUNT(*) FROM users WHERE userid is null", "expected_result": 0, "type": "equal"},
+        {"check_sql": "SELECT COUNT(*) FROM songs WHERE songid is null", "expected_result": 0, "type": "equal"},
+        {"check_sql": "SELECT COUNT(*) FROM artists WHERE artistid is null", "expected_result": 0, "type": "equal"},
+        {"check_sql": "SELECT COUNT(*) FROM time WHERE start_time is null", "expected_result": 0, "type": "equal"},
+    ],
 )
 
 end_operator = DummyOperator(

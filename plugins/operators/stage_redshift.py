@@ -24,7 +24,6 @@ class StageToRedshiftOperator(BaseOperator):
         s3_bucket="",
         s3_key="",
         file_format="",
-        create_table_sql="",
         *args,
         **kwargs,
     ):
@@ -36,15 +35,11 @@ class StageToRedshiftOperator(BaseOperator):
         self.s3_bucket = s3_bucket
         self.s3_key = s3_key
         self.file_format = file_format
-        self.create_table_sql = create_table_sql
 
     def execute(self, context):
         aws_hook = AwsHook(self.aws_credentials_id)
         credentials = aws_hook.get_credentials()
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-
-        self.log.info(f"Creating table '{self.table}'")
-        redshift.run(self.create_table_sql)
 
         self.log.info(f"Copying data from S3 to Redshift")
         s3_path = f"s3://{self.s3_bucket}/{self.s3_key}"

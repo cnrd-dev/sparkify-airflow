@@ -11,39 +11,35 @@ class DataQualityOperator(BaseOperator):
     def __init__(
         self,
         redshift_conn_id="",
-        tables_and_columns={
-            "songplays": ["playid"],
-            "users": ["userid"],
-            "songs": ["songid"],
-            "artists": ["artistid"],
-            "time": ["start_time"],
-        },
+        dq_checks="",
         *args,
         **kwargs,
     ):
 
         super(DataQualityOperator, self).__init__(*args, **kwargs)
         self.redshift_conn_id = redshift_conn_id
-        self.tables_and_columns = tables_and_columns
+        self.dq_checks = dq_checks
 
     def execute(self, context):
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
 
-        # Test for rows > 0
-        for table in self.tables_and_columns:
-            rows = redshift.get_first(SqlQueries.test_count_rows.format(table))
-            if rows[0] > 1:
-                self.log.info(f"Test passed. '{table}' has {rows[0]}.")
-            else:
-                raise ValueError(f"Test failed. '{table}' has 0 rows.")
+        for check in self.dq_checks:
+            sql = check.get("check_sql")
+            exp_result = check.get("expected_result")
+            type_result = check.get("type")
 
-        # Test for nulls
-        for table, columns in self.tables_and_columns.items():
-            for column in columns:
-                rows = redshift.get_first(SqlQueries.test_for_nulls.format(table, column))
-                if rows[0] > 1:
-                    raise ValueError(f"Test failed. '{table}' on column '{column}' has {rows[0]} NULL rows.")
+            rows_count = redshift.get_first(sql)[0]
+
+            # compare with the expected results
+            if type_result == "greater":
+                if rows_count > exp_result:
+                    self.log.info(f"Test passed. Table with {rows_count} rows is greater than {exp_result}.")
                 else:
-                    self.log.info(f"Test passed. '{table}' on column '{column}' has no NULLs.")
+                    raise ValueError(f"Test failed. Table with {rows_count} rows is not greater than {exp_result}.")
+            elif type_result == "equal":
+                if rows_count == exp_result:
+                    self.log.info(f"Test passed. Table with {rows_count} rows is equal to {exp_result}.")
+                else:
+                    raise ValueError(f"Test failed. Table with {rows_count} rows is equal to {exp_result}.")
 
         self.log.info("DataQuality check completed")
